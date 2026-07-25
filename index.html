@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KasKu - Pencatat Keuangan Elegan</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-0 sm:p-4">
+
+    <!-- Mobile Frame Container -->
+    <div class="w-full sm:max-w-md bg-slate-800 sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col h-screen sm:h-[850px] border border-slate-700">
+        
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-violet-600 to-indigo-600 p-6 text-white rounded-b-3xl shadow-lg relative">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h1 class="text-xs uppercase tracking-wider text-violet-200 font-semibold">Dompet Digital</h1>
+                    <h2 class="text-2xl font-bold">KasKu</h2>
+                </div>
+                <button onclick="exportToExcel()" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-xl text-sm font-medium flex items-center gap-2 backdrop-blur-md transition">
+                    <i class="fa-solid fa-file-excel text-emerald-400"></i> Ekspor Excel
+                </button>
+            </div>
+
+            <!-- Card Saldo -->
+            <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 mt-2">
+                <p class="text-xs text-violet-200">Total Saldo</p>
+                <h3 id="total-balance" class="text-3xl font-extrabold mt-1">Rp 0</h3>
+                <div class="grid grid-cols-2 gap-4 mt-4 pt-3 border-t border-white/10">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-emerald-300 text-xs">
+                            <i class="fa-solid fa-arrow-down-long"></i> Pemasukan
+                        </div>
+                        <p id="total-income" class="text-lg font-bold mt-0.5">Rp 0</p>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5 text-rose-300 text-xs">
+                            <i class="fa-solid fa-arrow-up-long"></i> Pengeluaran
+                        </div>
+                        <p id="total-expense" class="text-lg font-bold mt-0.5">Rp 0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Scrollable -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-6">
+            
+            <!-- Form Input Transaksi -->
+            <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-700">
+                <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-plus text-violet-400"></i> Tambah Transaksi Baru
+                </h3>
+                <form id="transaction-form" class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Keterangan</label>
+                        <input type="text" id="description" required placeholder="Contoh: Gaji Bulanan, Makan Siang" 
+                            class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Nominal (Rp)</label>
+                            <input type="number" id="amount" required placeholder="0" min="1"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Jenis</label>
+                            <select id="type" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500">
+                                <option value="income">Uang Masuk</option>
+                                <option value="expense">Uang Keluar</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Kategori</label>
+                        <select id="category" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500">
+                            <option value="Gaji">Gaji / Pendapatan</option>
+                            <option value="Makanan">Makanan & Minuman</option>
+                            <option value="Transportasi">Transportasi</option>
+                            <option value="Belanja">Belanja</option>
+                            <option value="Tagihan">Tagihan & Utilitas</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2.5 rounded-xl transition text-sm shadow-lg shadow-violet-600/30">
+                        Simpan Transaksi
+                    </button>
+                </form>
+            </div>
+
+            <!-- Filter & Riwayat -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-semibold text-slate-300">Riwayat Transaksi</h3>
+                    <select id="filter-type" onchange="filterTransactions()" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded-lg px-2 py-1 focus:outline-none">
+                        <option value="all">Semua</option>
+                        <option value="income">Masuk</option>
+                        <option value="expense">Keluar</option>
+                    </select>
+                </div>
+                
+                <div id="transaction-list" class="space-y-2.5">
+                    <!-- Dynamic Items -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Script Aplikasi -->
+    <script>
+        let transactions = JSON.parse(localStorage.getItem('kasku_transactions')) || [];
+
+        const form = document.getElementById('transaction-form');
+        const descInput = document.getElementById('description');
+        const amountInput = document.getElementById('amount');
+        const typeInput = document.getElementById('type');
+        const categoryInput = document.getElementById('category');
+        
+        const totalBalanceEl = document.getElementById('total-balance');
+        const totalIncomeEl = document.getElementById('total-income');
+        const totalExpenseEl = document.getElementById('total-expense');
+        const transactionListEl = document.getElementById('transaction-list');
+        const filterTypeEl = document.getElementById('filter-type');
+
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+        }
+
+        function updateUI() {
+            let income = 0;
+            let expense = 0;
+
+            transactions.forEach(t => {
+                if (t.type === 'income') {
+                    income += Number(t.amount);
+                } else {
+                    expense += Number(t.amount);
+                }
+            });
+
+            const balance = income - expense;
+
+            totalBalanceEl.textContent = formatRupiah(balance);
+            totalIncomeEl.textContent = formatRupiah(income);
+            totalExpenseEl.textContent = formatRupiah(expense);
+
+            renderTransactions(transactions);
+            localStorage.setItem('kasku_transactions', JSON.stringify(transactions));
+        }
+
+        function renderTransactions(data) {
+            transactionListEl.innerHTML = '';
+
+            if (data.length === 0) {
+                transactionListEl.innerHTML = `
+                    <div class="text-center py-8 text-slate-500 text-sm">
+                        Belum ada transaksi tercatat.
+                    </div>
+                `;
+                return;
+            }
+
+            // Urutkan dari terbaru
+            const sorted = [...data].reverse();
+
+            sorted.forEach((t) => {
+                const isIncome = t.type === 'income';
+                const itemEl = document.createElement('div');
+                itemEl.className = "bg-slate-900/40 border border-slate-700/60 p-3 rounded-xl flex items-center justify-between hover:bg-slate-900 transition";
+                
+                itemEl.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center ${isIncome ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">
+                            <i class="fa-solid ${isIncome ? 'fa-arrow-down-long' : 'fa-arrow-up-long'}"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-white">${t.description}</h4>
+                            <p class="text-xs text-slate-400">${t.category} • ${t.date}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold ${isIncome ? 'text-emerald-400' : 'text-rose-400'}">
+                            ${isIncome ? '+' : '-'} ${formatRupiah(t.amount)}
+                        </span>
+                        <button onclick="deleteTransaction('${t.id}')" class="text-slate-500 hover:text-rose-400 transition text-xs p-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                transactionListEl.appendChild(itemEl);
+            });
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            const newTransaction = {
+                id: Date.now().toString(),
+                description: descInput.value,
+                amount: Number(amountInput.value),
+                type: typeInput.value,
+                category: categoryInput.value,
+                date: dateStr
+            };
+
+            transactions.push(newTransaction);
+            updateUI();
+            form.reset();
+        });
+
+        function deleteTransaction(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            updateUI();
+        }
+
+        function filterTransactions() {
+            const filter = filterTypeEl.value;
+            if (filter === 'all') {
+                renderTransactions(transactions);
+            } else {
+                const filtered = transactions.filter(t => t.type === filter);
+                renderTransactions(filtered);
+            }
+        }
+
+        function exportToExcel() {
+            if (transactions.length === 0) {
+                alert('Tidak ada data transaksi untuk diekspor!');
+                return;
+            }
+
+            const dataToExport = transactions.map((t, index) => ({
+                No: index + 1,
+                Tanggal: t.date,
+                Keterangan: t.description,
+                Kategori: t.category,
+                Jenis: t.type === 'income' ? 'Uang Masuk' : 'Uang Keluar',
+                Nominal: t.amount
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Keuangan");
+
+            XLSX.writeFile(workbook, "Laporan_Keuangan_KasKu.xlsx");
+        }
+
+        // Inisialisasi awal
+        updateUI();
+    </script>
+</body>
+</html>
