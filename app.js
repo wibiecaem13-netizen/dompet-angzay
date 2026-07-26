@@ -506,8 +506,6 @@ function deleteTransaction(id) {
             transactions = transactions.filter(t => t.id !== id);
             updateUI();
         }
-        transactions = transactions.filter(t => t.id !== id);
-        updateUI();
     }
 }
 
